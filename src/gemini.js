@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = "AQ.Ab8RN6JPCeDN0IvowrbFsSzjdK4UiMhIL1fMzQAa1_oMcVXBmg";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 export async function analyzeIssueImage(base64Image, description) {

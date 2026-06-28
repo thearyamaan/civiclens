@@ -30,7 +30,7 @@ function resizeImage(file) {
 }
 
 async function analyzeWithGemini(base64Full, description) {
-  const GEMINI_KEY = "AQ.Ab8RN6JPCeDN0IvowrbFsSzjdK4UiMhIL1fMzQAa1_oMcVXBmg";
+ const GEMINI_KEY = import.meta.env.VITE_GEMINI_KEY;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
   const base64Data = base64Full.split(",")[1];
   const prompt = `You are an AI for a civic issue reporting app. Analyze this image and description: "${description}". Respond ONLY with valid JSON:
