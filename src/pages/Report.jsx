@@ -66,8 +66,27 @@ function resizeImage(file) {
   });
 }
 
+function smartClassify(description) {
+  const text = (description || "").toLowerCase();
+  let category = "Other", department = "Public Works", severity = "Medium";
+
+  if (text.match(/pothole|crater|hole|crack/)) { category = "Pothole"; department = "Public Works"; }
+  else if (text.match(/light|lamp|dark|electricity|streetlight/)) { category = "Streetlight"; department = "Electricity Board"; }
+  else if (text.match(/water|leak|pipe|flood/)) { category = "Water Leakage"; department = "Water Authority"; }
+  else if (text.match(/garbage|trash|waste|litter|dump/)) { category = "Garbage"; department = "Sanitation Department"; }
+  else if (text.match(/tree|branch|fallen/)) { category = "Tree Hazard"; department = "Parks Department"; }
+  else if (text.match(/sewer|sewage|drain/)) { category = "Sewage"; department = "Water Authority"; }
+  else if (text.match(/road|street|pavement/)) { category = "Road Damage"; department = "Public Works"; }
+
+  if (text.match(/critical|emergency|danger|urgent|severe/)) severity = "Critical";
+  else if (text.match(/large|big|serious|bad|major/)) severity = "High";
+  else if (text.match(/small|minor|little/)) severity = "Low";
+
+  return { category, severity, department };
+}
+
 async function analyzeWithGemini(base64Full, description) {
-  const GEMINI_KEY = "REPLACE_WITH_YOUR_AIzaSy_KEY";
+  const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
   const base64Data = base64Full.split(",")[1];
 
@@ -83,12 +102,7 @@ async function analyzeWithGemini(base64Full, description) {
           {
             parts: [
               { text: prompt },
-              {
-                inline_data: {
-                  mime_type: "image/jpeg",
-                  data: base64Data,
-                },
-              },
+              { inline_data: { mime_type: "image/jpeg", data: base64Data } },
             ],
           },
         ],
@@ -96,11 +110,20 @@ async function analyzeWithGemini(base64Full, description) {
     });
 
     const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const clean = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(clean);
-  } catch {
-    return null;
+    const parsed = JSON.parse(clean);
+    if (parsed.category) return parsed;
+    throw new Error("No category in response");
+  } catch (err) {
+    console.log("Gemini fallback:", err.message);
+    const classified = smartClassify(description);
+    return {
+      ...classified,
+      summary: description || "Community issue reported by citizen",
+      recommendedAction: `${classified.department} should inspect and resolve this ${classified.category.toLowerCase()} issue promptly.`
+    };
   }
 }
 
@@ -147,29 +170,28 @@ export default function Report({ user }) {
 
   const navigate = useNavigate();
 
+  async function runAnalysis(imageData, desc) {
+    setAnalyzing(true);
+    setAiDone(false);
+    const result = await analyzeWithGemini(imageData, desc);
+    setCategory(result.category || "Other");
+    setSeverity(result.severity || "Medium");
+    setDepartment(result.department || "Public Works");
+    setSummary(result.summary || "");
+    setRecommendedAction(result.recommendedAction || "");
+    setAiDone(true);
+    setAnalyzing(false);
+  }
+
   async function handleImage(e) {
     const file = e.target.files[0];
     if (!file) return;
-
-    setAnalyzing(true);
-    setAiDone(false);
 
     const resized = await resizeImage(file);
     setImagePreview(resized);
     setImageSmall(resized);
 
-    const result = await analyzeWithGemini(resized, description);
-
-    if (result) {
-      setCategory(result.category || "Other");
-      setSeverity(result.severity || "Medium");
-      setDepartment(result.department || "Public Works");
-      setSummary(result.summary || "");
-      setRecommendedAction(result.recommendedAction || "");
-    }
-
-    setAiDone(true);
-    setAnalyzing(false);
+    await runAnalysis(resized, description);
   }
 
   async function handleUseCurrentLocation() {
@@ -241,7 +263,7 @@ export default function Report({ user }) {
 
   return (
     <div className="page">
-      <div className="container" style={{ maxWidth: 660 }}>
+      <div className="container" style={{ maxWidth: 660, margin: "0 auto" }}>
         <div style={{ marginBottom: "2rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)" }} />
@@ -374,6 +396,17 @@ export default function Report({ user }) {
               required
               style={{ resize: "vertical" }}
             />
+            {imageSmall && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ marginTop: "0.75rem" }}
+                disabled={analyzing}
+                onClick={() => runAnalysis(imageSmall, description)}
+              >
+                {analyzing ? "Analyzing..." : "🔄 Re-analyze with this description"}
+              </button>
+            )}
           </div>
 
           <div className="card">
