@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 
-const MAPS_KEY = "AIzaSyDSiiTqjJziXAgP9bjQkydk1I6lMbEvZXU";
+const MAPS_KEY = import.meta.env.VITE_MAPS_API_KEY;
 
 const SEVERITY_COLOR = { Critical: "#ef4444", High: "#f97316", Medium: "#eab308", Low: "#22c55e" };
 

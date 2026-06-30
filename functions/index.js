@@ -1,6 +1,8 @@
 const functions = require("firebase-functions");
 const fetch = require("node-fetch");
 
+const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
+
 exports.analyzeIssue = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -32,7 +34,7 @@ Respond ONLY with a valid JSON object in this exact format:
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": "AQ.Ab8RN6JzjZtdiaNvysTmIyAlQj3vz6_WqUrKX5zi0_JengfoYQ"
+          "x-goog-api-key": GEMINI_KEY
         },
         body: JSON.stringify({
           contents: [{
