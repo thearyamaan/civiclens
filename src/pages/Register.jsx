@@ -8,59 +8,93 @@ export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("citizen");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   async function handleRegister(e) {
     e.preventDefault();
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
       await setDoc(doc(db, "users", cred.user.uid), {
-        name, email, points: 0, role: "citizen",
-        reportsCount: 0, votesGiven: 0, createdAt: new Date()
+        name,
+        email,
+        points: 0,
+        role,
+        createdAt: new Date()
       });
       navigate("/");
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      setError(err.message);
+    }
     setLoading(false);
   }
 
   return (
     <div className="page" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ width: "100%", maxWidth: 420 }}>
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg, var(--teal), var(--blue))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", margin: "0 auto 1rem" }}>🏙️</div>
-          <h2 className="display" style={{ fontSize: "1.6rem", fontWeight: 700 }}>Join CivicLens</h2>
-          <p style={{ color: "var(--text-dim)", marginTop: "0.4rem", fontSize: "0.9rem" }}>Make your community better</p>
-        </div>
-        <div className="card">
-          {error && (
-            <div style={{ background: "var(--red-dim)", border: "1px solid var(--red)", borderRadius: 8, padding: "0.75rem 1rem", marginBottom: "1.25rem", color: "var(--red)", fontSize: "0.88rem" }}>
-              {error}
+      <div className="card" style={{ width: "100%", maxWidth: "440px" }}>
+        <h2 style={{ marginBottom: "1.5rem", color: "#60a5fa" }}>Join CivicLens</h2>
+        {error && <p style={{ color: "#fca5a5", marginBottom: "1rem" }}>{error}</p>}
+        <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <input type="text" placeholder="Full name" value={name} onChange={e => setName(e.target.value)} required />
+          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Password (min 6 chars)" value={password} onChange={e => setPassword(e.target.value)} required />
+
+          <div>
+            <label style={{ display: "block", marginBottom: "0.5rem", color: "#94a3b8", fontSize: "0.9rem" }}>
+              I am registering as:
+            </label>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                type="button"
+                onClick={() => setRole("citizen")}
+                style={{
+                  flex: 1,
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  border: role === "citizen" ? "2px solid #3b82f6" : "1px solid #334155",
+                  background: role === "citizen" ? "#1e3a5f" : "#0f172a",
+                  color: role === "citizen" ? "#93c5fd" : "#94a3b8",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                👤 Citizen
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("authority")}
+                style={{
+                  flex: 1,
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  border: role === "authority" ? "2px solid #3b82f6" : "1px solid #334155",
+                  background: role === "authority" ? "#1e3a5f" : "#0f172a",
+                  color: role === "authority" ? "#93c5fd" : "#94a3b8",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                🏢 Authority
+              </button>
             </div>
-          )}
-          <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.82rem", color: "var(--text-dim)", marginBottom: "0.4rem", fontWeight: 500 }}>Full name</label>
-              <input type="text" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} required />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.82rem", color: "var(--text-dim)", marginBottom: "0.4rem", fontWeight: 500 }}>Email</label>
-              <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.82rem", color: "var(--text-dim)", marginBottom: "0.4rem", fontWeight: 500 }}>Password</label>
-              <input type="password" placeholder="Min 6 characters" value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: "100%", justifyContent: "center", marginTop: "0.5rem", padding: "0.8rem" }}>
-              {loading ? "Creating account..." : "Create account"}
-            </button>
-          </form>
-        </div>
-        <p style={{ textAlign: "center", marginTop: "1.25rem", color: "var(--text-dim)", fontSize: "0.88rem" }}>
-          Already have an account? <Link to="/login" style={{ color: "var(--teal)", fontWeight: 600 }}>Sign in →</Link>
+            <p style={{ color: "#64748b", fontSize: "0.78rem", marginTop: "0.5rem" }}>
+              {role === "citizen"
+                ? "Report issues, vote on community problems, and track resolutions."
+                : "Manage issue status, view analytics, and respond to community reports."}
+            </p>
+          </div>
+
+          <button className="btn-primary" type="submit" disabled={loading}>
+            {loading ? "Creating account..." : "Create account"}
+          </button>
+        </form>
+        <p style={{ marginTop: "1rem", color: "#94a3b8" }}>
+          Already have an account? <Link to="/login" style={{ color: "#60a5fa" }}>Sign in</Link>
         </p>
       </div>
     </div>
